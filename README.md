@@ -54,7 +54,7 @@ Results from two types of searches can be collected:
   * Name
   * Unique identifier
   * Profile picture link
-* Channel Search -- Gets a list of channels given keywords/query
+* Channel Search -- Gets a list of channels given some keywords/query as arguments
 
 #### Smart Search:  
 ```python
@@ -71,4 +71,5 @@ from search import searchChannel
 
 query = "The Voice"
 data = searchChannel(query)
+print(data)
 ```
