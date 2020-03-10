@@ -16,10 +16,11 @@ def setDriver(executable_path, headless = False, maximize = True):
     return webdriver.Chrome(executable_path = executable_path, chrome_options=chrome_options)
 
 def completeYoutubeLink(link):
-    if not link.startswith("http"):
-        if not link.startswith("/"):
-            link = "/" + link
-        link = "https://www.youtube.com" + link
+    if link != "":
+        if not link.startswith("http"):
+            if not link.startswith("/"):
+                link = "/" + link
+            link = "https://www.youtube.com" + link
     return link
 
 def beautifyText(text):
