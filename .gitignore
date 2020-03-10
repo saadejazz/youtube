@@ -2,3 +2,4 @@ chrome/
 .ipynb_checkpoints/
 __pycache__/
 youtube.ipynb
+.vscode/

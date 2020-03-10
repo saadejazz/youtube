@@ -1,7 +1,8 @@
 ## Crawler for Youtube  
 Allows gathering data from [YouTube](https://youtube.com). Two major type of data is gathered:  
 * Channels Data  
-* Trending Videos  
+* Trending Videos 
+* Searches 
 
 ### Channels:  
 For channels, a URL is required:  
@@ -47,4 +48,27 @@ data = getTrends(driver)
 print(data)
 ```
   
-  
+### Searches:   
+Results from two types of searches can be collected:  
+* Smart Search -- Gets the following data given a channel url:
+  * Name
+  * Unique identifier
+  * Profile picture link
+* Channel Search -- Gets a list of channels given keywords/query
+
+#### Smart Search:  
+```python
+from search import smartSearch
+
+url = "https://www.youtube.com/channel/UCky4jqybV5XHnLg0egiBCkg"
+data = smartSearch(url)
+print(data)
+```
+
+#### Channel Search:  
+```python
+from search import searchChannel
+
+query = "The Voice"
+data = searchChannel(query)
+```

@@ -164,72 +164,14 @@ class Channel():
         self.profile["overview"] = overview
         return overview
 
-    def getDataFromThumbnails(self, content):
-        soup = BeautifulSoup(content, "html.parser")
-        contents = soup.find('div', id = 'contents')
-        videos = []
-        for item in contents.find_all('div', id = 'dismissable'):
-            aria = False
-            video = {
-                "name": "",
-                "link": "",
-                "video_length": "",
-                "thumbnail_directory": "",
-                "views": "",
-                "timestamp": ""
-            }
-            a = item.find('a')
-            if a:
-                video["link"] = utils.completeYoutubeLink(a.get('href', ""))
-                a = a.find('img')
-                if a:
-                    video['thumbnail_directory'] = a.get('src', "")
-            ti = item.find('span', {'class': 'style-scope ytd-thumbnail-overlay-time-status-renderer'})
-            if ti:
-                video["video_length"] = utils.beautifyText(ti.text)
-            item = item.find('div', id = 'details')
-            if item:
-                a = item.find('a', id = 'video-title')
-                if a:
-                    video["name"] = a.text
-                    aria = a.get('aria-label')
-                    if aria:
-                        video["views"] = aria.split()[-2]
-                        aria = True
-                item = item.find('div', id = 'metadata-line')
-                if item:
-                    span = item.find_all('span', {'class': 'style-scope ytd-grid-video-renderer'})
-                    if len(span) >= 2:
-                        if not aria:    
-                            video["views"] = span[0].text
-                        video["timestamp"] = span[1].text
-            videos.append(video)
-        return videos
-
-    def getDataFromUrl(self, newUrl):
-        # confirm page load
-        if self.driver.current_url != newUrl:
-            self.driver.get(newUrl)
-            try:
-                self.wait.until(EC.presence_of_all_elements_located((By.ID, 'dismissable')))
-                self.wait.until(EC.presence_of_all_elements_located((By.XPATH, '//span[contains(@class, "ytd-thumbnail-overlay-time-status-renderer")]')))
-                utils.scroll(self.driver)
-            except TimeoutException:
-                return []
-
-        # extract data
-        vids = self.getDataFromThumbnails(self.driver.page_source)
-        vids = [v for v in vids if v["thumbnail_directory"] != ""]
-        return vids
-
     def getVideos(self):
         # for popular uploads
         newUrl = utils.includeKeyInUrl(self.url + "/videos", view = "0", sort = "p", flow = "grid")
-        self.profile["videos"]["popular"] = self.getDataFromUrl(newUrl)
+        self.profile["videos"]["popular"] = utils.getDataFromUrl(self.driver, self.wait, newUrl)
         
         # for newest uploads
         newUrl = utils.includeKeyInUrl(self.url + "/videos", view = "0", sort = "dd", flow = "grid")
-        self.profile["videos"]["new"] = self.getDataFromUrl(newUrl)
+        self.profile["videos"]["new"] = utils.getDataFromUrl(self.driver, self.wait, newUrl)
 
         return self.profile["videos"]
     
