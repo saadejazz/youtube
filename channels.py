@@ -4,10 +4,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from urllib.parse import unquote
 from selenium import webdriver
 from bs4 import BeautifulSoup
-from time import time, sleep
-import datetime
+from time import sleep
 import utils
 import json
 import re
@@ -83,6 +83,91 @@ class Channel():
                 "comment_likes": 0
                 }
 
+    def overview(self):
+        # navigating to page
+        if self.driver.current_url != self.url + "/about":
+            self.driver.get(self.url + "/about")
+            sleep(0.4)
+        
+        overview = {
+            "name": "",
+            "url": "",
+            "media_directory": "",
+            "subscriber_count": "",
+            "is_verified": False,
+            "description": "",
+            "location": "",
+            "web_links": [],
+            "joining_date": "",
+            "total_views":""
+        }
+
+        # extracting name, url, image from meta tags
+        soup = BeautifulSoup(self.driver.page_source, "html.parser")
+        n = soup.find('meta', {'property': 'og:url'})
+        if n:
+            overview["url"] = n.get('content', '')
+        n = soup.find('meta', {'property': 'og:title'})
+        if n:
+            overview["name"] = n.get('content', '')
+        n = soup.find('meta', {'property': 'og:image'})
+        if n:
+            overview["media_directory"] = n.get('content', '')
+
+        # extracting verification status and subscriber count
+        n = soup.find('div', id = 'channel-container')
+        if n:
+            nam = n.find('ytd-badge-supported-renderer', {'class': 'ytd-channel-name'})
+            if nam:
+                nam = nam.find('svg')
+                if nam:
+                    overview["is_verified"] = True
+            nam = n.find('yt-formatted-string', id = 'subscriber-count')
+            if nam:
+                text = nam.text
+                if text != "":
+                    overview["subscriber_count"] = text.split()[0]
+
+        # extracting description
+        n = soup.find('yt-formatted-string', id = 'description')
+        if n:
+            overview["description"] = n.text
+
+        # extracting location    
+        n = soup.find('div', id = 'details-container')
+        if n:
+            n = n.find(lambda tag: tag.name == 'td' and "Location:" in tag.text)
+            if n:
+                n = n.findNext('td')
+                if n:
+                    overview["location"] = n.text.replace('\n', '')
+
+        # extracting web links            
+        n = soup.find('div', id = 'link-list-container')
+        if n:
+            for a in n.find_all('a'):
+                link = {}
+                link["link_type"] = a.text.replace('\n', '')
+                link["redirect_url"] = unquote(utils.completeYoutubeLink(a.get('href', '')).partition('&q=')[2])
+                overview["web_links"].append(link)
+
+        # extracting joining date and views        
+        n = soup.find('div', id = 'right-column')
+        if n:
+            nam = n.find(lambda tag: tag.name == 'yt-formatted-string' and "Joined" in tag.text)
+            if nam:
+                text = nam.text
+                if text != "" and len(text.split()) >= 2:
+                    overview["joining_date"] = " ".join(text.split()[1:])
+            nam = n.find(lambda tag: tag.name == 'yt-formatted-string' and "views" in tag.text)
+            if nam:
+                text = nam.text
+                if text != "":
+                    overview["total_views"] = text.split()[0]
+        
+        self.profile["overview"] = overview
+        return overview
+
     def getDataFromThumbnails(self, content):
         soup = BeautifulSoup(content, "html.parser")
         contents = soup.find('div', id = 'contents')
@@ -132,6 +217,7 @@ class Channel():
             try:
                 self.wait.until(EC.presence_of_all_elements_located((By.ID, 'dismissable')))
                 self.wait.until(EC.presence_of_all_elements_located((By.XPATH, '//span[contains(@class, "ytd-thumbnail-overlay-time-status-renderer")]')))
+                utils.scroll(self.driver)
             except TimeoutException:
                 return []
 
@@ -143,9 +229,6 @@ class Channel():
     def getVideos(self):
         # for popular uploads
         newUrl = utils.includeKeyInUrl(self.url + "/videos", view = "0", sort = "p", flow = "grid")
-        # element = self.driver.find_element_by_tag_name('body')
-        # self.driver.execute_script("arguments[0].scrollIntoView();", element)
-        # utils.scroll(self.driver)
         self.profile["videos"]["popular"] = self.getDataFromUrl(newUrl)
         
         # for newest uploads
@@ -196,12 +279,6 @@ class Channel():
             sleep(1)
         
         content = str(self.driver.page_source)
-        soup = BeautifulSoup(content, "html.parser")
-        blocks = soup.find_all('ytd-backstage-post-thread-renderer')
-        posts = []
-
-        if len(blocks) == 0:
-            return []
         
         # open comments
         comm = re.findall(r'View all [0-9]+ comments', content)
@@ -214,6 +291,11 @@ class Channel():
             self.wait.until(EC.visibility_of_all_elements_located((By.TAG_NAME, 'ytd-comment-thread-renderer')))
         except TimeoutException:
             pass
+
+        sleep(1)
+        soup = BeautifulSoup(self.driver.page_source, "html.parser")
+        blocks = soup.find_all('ytd-backstage-post-thread-renderer')
+        posts = []
 
         # extracting post one by one
         for block in blocks:
@@ -292,7 +374,7 @@ class Channel():
                     post["picture_links"].append(src)
             
             # removing duplicate links
-            for option in ["picture_links", "video_links", "other_link"]:
+            for option in ["picture_links", "video_links", "other_links"]:
                 post[option] = list(set(post[option]))
 
             # getting comments
@@ -372,3 +454,30 @@ class Channel():
                     elif pri.text == "Subscriptions":
                         self.profile["channels"]["subscribed"] = ch
         return self.profile["channels"]
+
+    def getCompleteProfile(self, include = None, exclude = None):
+        self.driver.get(self.url + "/videos")
+        a = self.driver.current_url
+        if "error?" in a and "404" in a:
+            print("profile does not exist")
+            return None
+        else:
+            if include:
+                final = [attr for attr in include if attr in self.attributes]
+            elif exclude:
+                final = [attr for attr in self.attributes if attr not in exclude]
+            else:
+                final = self.attributes
+
+            if "overview" in final:
+                self.overview()
+            if "videos" in final:
+                self.getVideos()
+            if "posts" in final:
+                self.getPosts()
+            if "channels" in final:
+                self.getAssociatedChannels()
+            if "playlists" in final:
+                self.getPlaylists()
+            
+            return self.profile

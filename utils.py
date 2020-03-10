@@ -34,7 +34,7 @@ def includeKeyInUrl(url, **kwargs):
         url += f'{key}={value}'
     return url
 
-def scroll(driver, numScrolls = 20):
+def scroll(driver, numScrolls = 30):
     for i in range(numScrolls):
         driver.find_element_by_tag_name('body').send_keys(Keys.END)
     
