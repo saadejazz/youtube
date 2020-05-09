@@ -6,7 +6,8 @@ def smartSearch(url):
     result = {
         "name": "",
         "id": "",
-        "media_directory": ""
+        "media_directory": "",
+        "username": ""
     }
     r = requests.get(url)
     if r.status_code == 404:
