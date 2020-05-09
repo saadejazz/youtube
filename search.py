@@ -1,12 +1,12 @@
 from bs4 import BeautifulSoup
 import requests
-import utils
+from . import utils
 
 def smartSearch(url):
     result = {
-        "name": "",
+        "full_name": "",
         "id": "",
-        "media_directory": "",
+        "picture_url": "",
         "username": ""
     }
     r = requests.get(url)
@@ -21,7 +21,12 @@ def smartSearch(url):
             k = soup.find('meta', {'property': properties[i]})
             if k:
                 result[keys[i]] = k.get('content', '')
-        result["id"] = result["id"].split("/")[-1]
+        if "/user/" in result["id"]:
+            result["username"] = result["id"].partition("/user/")[2].partition("/")[0]
+            result["id"] = ""
+        else:
+            result["id"] = result["id"].split("/")[-1]
+            result["username"] = ""
         return result
 
 def searchChannel(query):
@@ -32,27 +37,35 @@ def searchChannel(query):
     results = []
     for a in soup.find_all('div', {'class': 'yt-lockup-channel'}):
         result = {
-            "name": "",
+            "full_name":"",
+            "username": "",
             "url": "",
             "id": "",
-            "media_directory": ""
+            "picture_url": ""
         }
         img = a.find('div', {'class': 'yt-lockup-thumbnail'})
-#         print(img)
         if img:
             img = img.find('img')
             if img:
-                result["media_directory"] = img.get('src', '')
-                if result["media_directory"].endswith(".gif"):
-                    result["media_directory"] = img.get('data-thumb', '')
-                if not result["media_directory"].startswith("http"):
-                    result["media_directory"] = "https:" + result["media_directory"]
+                result["picture_url"] = img.get('src', '')
+                if result["picture_url"].endswith(".gif"):
+                    result["picture_url"] = img.get('data-thumb', '')
+                if not result["picture_url"].startswith("http"):
+                    result["picture_url"] = "https:" + result["picture_url"]
         img = a.find('div', {'class': 'yt-lockup-content'})
         if img:
             img = img.find('a')
             if img:
-                result["name"] = img.get('title', '')
+                result["full_name"] = img.get('title', '')
                 result["url"] = utils.completeYoutubeLink(img.get('href', ''))
-                result["id"] = result["url"].split("/")[-1]
+                if "/user/" in result["url"]:
+                    result["username"] = result["url"].partition("/user/")[2].partition("/")[0]
+                    result["id"] = ""
+                else:
+                    result["id"] = result["url"].split("/")[-1]
+                    result["username"] = ""
         results.append(result)
-    return results
+    return {
+        "site": "youtube",
+        "data": results
+    }
