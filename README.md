@@ -1,5 +1,5 @@
 ## Crawler for Youtube  
-Allows gathering data from [YouTube](https://youtube.com). Two major type of data is gathered:  
+Allows gathering data from [YouTube](https://youtube.com). The following types of data is gathered:  
 * Channels Data  
 * Trending Videos 
 * Searches 
