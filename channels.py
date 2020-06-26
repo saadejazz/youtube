@@ -144,7 +144,7 @@ class Channel():
             for a in n.find_all('a'):
                 link = {}
                 link["link_type"] = a.text.replace('\n', '')
-                link["redirect_url"] = unquote(utils.completeYoutubeLink(a.get('href', '')).partition('&q=')[2])
+                link["redirect_url"] = unquote(a.get('href', '')).partition('q=')[2].partition("&")[0]
                 overview["web_links"].append(link)
 
         # extracting joining date and views        

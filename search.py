@@ -14,7 +14,7 @@ HEADERS = {
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1'
     }
- 
+
 def smartSearch(url):
     result = {
         "full_name": "",
