@@ -18,10 +18,11 @@ url = "https://www.youtube.com/channel/UCky4jqybV5XHnLg0egiBCkg"
 data = Channel(url = url).getCompleteProfile()
 
 # print the results. Results are in the form of a dictionary
+# If you want to check the data format, view "channel.json".
 print(data)
 ```
 **Important Info:**  
-* Initiating a driver instance requires a chromedriver executable which can be downloaded from [here](https://chromedriver.chromium.org/downloads). Give the path of the driver to the **executable_path** argument of the **setDriver** function. Make sure you have chrome installed, and have execution permissions for the driver. The driver version should be the same as your installed chrome application.    
+* Initiating a driver instance requires a chromedriver executable which can be downloaded from [here](https://chromedriver.chromium.org/downloads). Give the path of the driver to the **executable_path** argument of the **setDriver** function. Make sure you have chrome installed, and have execution permissions for the driver. The driver version should be the same as your installed chrome application.  
 * **getCompleteProfile()** takes two optional arguments: **include** and **exclude** to conduct a partial crawl comprising of some attributes. The list of allowed attributes is:  
   * *overview*
   * *videos*
